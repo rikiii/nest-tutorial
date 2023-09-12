@@ -11,24 +11,20 @@ export class UsersService {
   ) {}
 
   async findAll(): Promise<User[]> {
-    return await this.usersRepository.find();
+    return await this.usersRepository.find({});
   }
 
-  findOne(id: number): Promise<User | null> {
-    return this.usersRepository.findOneBy({ id });
+  async findOne(params: { id: string }): Promise<User | null> {
+    return this.usersRepository.findOneBy({ id: params.id });
   }
 
   async remove(id: number): Promise<void> {
     await this.usersRepository.delete(id);
   }
 
-  async addUser(body: { firstName: string; lastName: string }): Promise<void> {
-    const user = this.usersRepository.create({
-      firstName: body.firstName,
-      lastName: body.lastName,
-      isActive: true,
-    });
+  async addUser(user: User): Promise<void> {
+    const createdUser = this.usersRepository.create(user);
 
-    this.usersRepository.save(user, { reload: true });
+    this.usersRepository.save(createdUser, { reload: true });
   }
 }
