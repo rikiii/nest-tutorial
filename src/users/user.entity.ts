@@ -11,6 +11,9 @@ export class User {
   @Column()
   last_name: string;
 
-  @Column({ default: true })
+  @Column({ default: false })
   is_active: boolean;
+
+  @Column()
+  activate_token: string;
 }
