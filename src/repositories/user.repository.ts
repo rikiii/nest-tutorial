@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../users/user.entity';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class UserRepository {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async findAll(): Promise<User[]> {
@@ -15,7 +15,7 @@ export class UserRepository {
   }
 
   async findActiveOne(
-    params: Pick<User, 'id' | 'email_address'>,
+    params: Partial<Pick<User, 'id' | 'email_address'>>,
   ): Promise<User | null> {
     if (params.id) {
       return this.userRepository.findOneBy({
@@ -43,6 +43,8 @@ export class UserRepository {
       return this.userRepository.findOneBy({
         email_address: params.email_address,
       });
+    } else {
+      return null;
     }
   }
 
