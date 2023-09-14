@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { SignUpService } from './services/sign-up.service';
+import { UserRepository } from './repositories/user.repository';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/user.entity';
-import { UsersModule } from './users/users.module';
-import { SignUpModule } from './sign-up/sign-up.module';
 
 @Module({
   imports: [
@@ -16,8 +17,9 @@ import { SignUpModule } from './sign-up/sign-up.module';
       entities: [User],
       synchronize: true,
     }),
-    UsersModule,
-    SignUpModule,
+    TypeOrmModule.forFeature([User]),
   ],
+  providers: [UserRepository, SignUpService],
+  controllers: [AppController],
 })
 export class AppModule {}

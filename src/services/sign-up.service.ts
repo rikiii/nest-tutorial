@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/user.entity';
-import { Repository } from 'typeorm';
 import { createTransport } from 'nodemailer';
+import { generateRandomString } from 'src/utils/generate-random-string';
+import { UserRepository } from 'src/repositories/user.repository';
 
 // nodemailerでメールを送るための設定
 const smtp = createTransport({
@@ -17,30 +17,24 @@ const smtp = createTransport({
 
 @Injectable()
 export class SignUpService {
-  constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
-  ) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   async signUp(user: User): Promise<void> {
     try {
-      // TODO: 何かしらの方法で生成
-      const activateToken = 'activateToken';
+      const activateToken = generateRandomString(30);
 
       const message = {
-        from: 'rikinotricky@gmail.com',
-        to: 'rikinotricky@gmail.com',
+        from: user.email_address,
+        to: user.email_address,
         subject: 'activate account',
         text: `http://localhost:3000/sign_up?user_id=${user.id}&activate_token=${activateToken}`,
       };
 
       console.log('sending...');
 
-      ('');
       smtp.sendMail(message, (error) => {
         if (error) {
           console.log('failed sending');
-          console.log(error.message);
           return;
         }
 
@@ -49,8 +43,7 @@ export class SignUpService {
           ...user,
           activate_token: activateToken,
         };
-        const createUser = this.usersRepository.create(userWithActivateToken);
-        this.usersRepository.save(createUser, { reload: true });
+        this.userRepository.add(userWithActivateToken);
       });
     } catch (e) {
       console.log('error: ', e);
@@ -58,10 +51,15 @@ export class SignUpService {
   }
 
   async findOne(params: { id: string }): Promise<User | null> {
-    return this.usersRepository.findOneBy({ id: params.id });
+    return this.userRepository.findOne({ id: params.id });
   }
 
-  async activate(params: { id: string }): Promise<void> {
-    await this.usersRepository.update(params, { is_active: true });
+  async activate(params: Pick<User, 'id' | 'activate_token'>): Promise<void> {
+    console.log('params.id: ', params.id);
+    const user = await this.userRepository.findOne({ id: params.id });
+
+    if (user.activate_token !== params.activate_token)
+      throw new Error('failed to activate the user');
+    await this.userRepository.activate(params);
   }
 }
