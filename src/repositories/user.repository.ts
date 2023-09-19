@@ -1,63 +1,98 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../entities/user.entity';
+import { UserModel } from 'src/models/user.model';
+
+export class User {
+  readonly id: string;
+  readonly emailAddress: string;
+  readonly password: string;
+  readonly active: boolean;
+  readonly activateToken: string;
+
+  constructor(user: User) {
+    this.id = user.id;
+    this.emailAddress = user.emailAddress;
+    this.password = user.password;
+    this.active = user.active;
+    this.activateToken = user.activateToken;
+  }
+}
 
 @Injectable()
 export class UserRepository {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    @InjectRepository(UserModel)
+    private readonly userRepository: Repository<UserModel>,
   ) {}
 
-  async findAll(): Promise<User[]> {
-    return await this.userRepository.find({});
-  }
-
-  async findActiveOne(
-    params: Partial<Pick<User, 'id' | 'email_address'>>,
-  ): Promise<User | null> {
-    if (params.id) {
-      return this.userRepository.findOneBy({
-        id: params.id,
-        is_active: true,
+  /**
+   * 特定のIDのアクティブなユーザーを取得
+   * @param id
+   * @param active
+   */
+  async findOneById(id: string, active?: boolean): Promise<User> {
+    const user = await this.userRepository
+      .findOneBy({
+        id,
+        active: typeof active === 'undefined' ? true : active,
+      })
+      .catch((error) => {
+        console.log(error.message);
+        throw new Error();
       });
-    } else if (params.email_address) {
-      return this.userRepository.findOneBy({
-        email_address: params.email_address,
-        is_active: true,
+    if (!user) throw new HttpException('User not found.', HttpStatus.NOT_FOUND);
+    return this._generateEntity(user);
+  }
+
+  /**
+   * 渡された情報でユーザーを作成
+   * @param user
+   */
+  async put(user: User): Promise<User> {
+    const model = this._generateModel(user);
+    const createdUser = this.userRepository.create(model);
+    const savedUser = await this.userRepository
+      .save(createdUser, {
+        reload: true,
+      })
+      .catch((error) => {
+        console.log(error);
+        throw new Error();
       });
-    } else {
-      return null;
-    }
+    return this._generateEntity(savedUser);
   }
 
-  async findOne(
-    params: Partial<Pick<User, 'id' | 'email_address'>>,
-  ): Promise<User | null> {
-    if (params.id) {
-      return this.userRepository.findOneBy({
-        id: params.id,
-      });
-    } else if (params.email_address) {
-      return this.userRepository.findOneBy({
-        email_address: params.email_address,
-      });
-    } else {
-      return null;
-    }
+  /**
+   * 渡された情報でユーザーを更新
+   * @param user
+   */
+  async update(user: User): Promise<User> {
+    const model = this._generateModel(user);
+    const updatedUser = await this.userRepository.save(model).catch((error) => {
+      console.log(error.message);
+      throw new Error();
+    });
+    return this._generateEntity(updatedUser);
   }
 
-  async remove(id: number): Promise<void> {
-    await this.userRepository.delete(id);
+  private _generateModel(user: User): UserModel {
+    return {
+      id: user.id,
+      email_address: user.emailAddress,
+      password: user.password,
+      active: user.active,
+      activate_token: user.activateToken,
+    };
   }
 
-  async add(user: User): Promise<void> {
-    const createdUser = this.userRepository.create(user);
-    this.userRepository.save(createdUser, { reload: true });
-  }
-
-  async activate(params: Pick<User, 'id'>): Promise<void> {
-    await this.userRepository.update(params, { is_active: true });
+  private _generateEntity(model: UserModel): User {
+    return new User({
+      id: model.id,
+      emailAddress: model.activate_token,
+      password: model.password,
+      active: model.active,
+      activateToken: model.activate_token,
+    });
   }
 }

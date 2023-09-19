@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 @Entity('users')
-export class User {
+export class UserModel {
   @PrimaryColumn()
   id: string;
 
@@ -12,7 +12,7 @@ export class User {
   password: string;
 
   @Column({ default: false })
-  is_active: boolean;
+  active: boolean;
 
   @Column()
   activate_token: string;

@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
+import { AppController } from './controllers/root.controller';
 import { SignUpService } from './services/sign-up.service';
 import { UserRepository } from './repositories/user.repository';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
+import { UserModel } from './models/user.model';
 import { NodemailerService } from './lib-services/nodemailer.service';
 import { JwtService } from './lib-services/jwt.service';
 import { SignInService } from './services/sign-in.service';
-import { UsersModule } from './users/users.module';
+import { ActivateService } from './services/activate.service';
 
 @Module({
   imports: [
@@ -18,11 +18,10 @@ import { UsersModule } from './users/users.module';
       username: 'root',
       password: '',
       database: 'nestjs_tutorial',
-      entities: [User],
+      entities: [UserModel],
       synchronize: true,
     }),
-    TypeOrmModule.forFeature([User]),
-    UsersModule,
+    TypeOrmModule.forFeature([UserModel]),
   ],
   providers: [
     UserRepository,
@@ -30,6 +29,7 @@ import { UsersModule } from './users/users.module';
     SignUpService,
     JwtService,
     SignInService,
+    ActivateService,
   ],
   controllers: [AppController],
 })
